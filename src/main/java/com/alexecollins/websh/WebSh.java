@@ -7,10 +7,13 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author alexec (alex.e.c@gmail.com)
@@ -24,9 +27,16 @@ public class WebSh implements Lifecycle {
 	private Thread thread;
 	private volatile boolean cancelled;
 
-	public static void main(String[] args) {
-		new ClassPathXmlApplicationContext("/com/alexecollins/websh/applicationContext.xml").start();
+	public static void main(String[] args) throws Exception {
+		final ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("/com/alexecollins/websh/applicationContext.xml");
+
+		if (args.length > 0) {
+			context.getBean(WebSh.class).execute( "open", args[0]);
+		}
+		context.start();
 	}
+
+	private URI pwd = URI.create("");
 
 	@Override
 	public void start() {
@@ -36,29 +46,17 @@ public class WebSh implements Lifecycle {
 		thread = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				URI pwd = URI.create("");
+
+				System.out.println("type help or quit");
+
 				final Scanner sc = new Scanner(System.in);
 				while (!cancelled) {
+					System.out.print("% ");
+					System.out.flush();
 					final String commandName = sc.next();
-					// TODO hack
-					final String line = sc.nextLine().trim();
-					final String[] args = line.length() == 0 ? new String[0] : line.split(" ");
-
+					final String line = sc.nextLine();
 					try {
-						final ModelAndView execute = execute(findTarget(pwd, commandName, args), pwd, args);
-						final BufferedReader in = new BufferedReader(execute.getReader());
-						try {
-							String l;
-							while ((l = in.readLine()) !=null){
-								System.out.println(l);
-							}
-						} finally {
-							in.close();
-						}
-						if (execute.getPath() == null) {
-							System.exit(0);
-						}
-						pwd = execute.getPath();
+						execute(commandName, line);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -68,6 +66,28 @@ public class WebSh implements Lifecycle {
 		thread.start();
 
 		running = true;
+	}
+
+	void execute(String commandName, String line) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException, IOException {
+		final List<String> list = new ArrayList<String>();
+		final Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(line.trim());
+		while (m.find())
+		list.add(m.group(1));
+		final String[] args = list.toArray(new String[list.size()]);
+		final ModelAndView execute = execute(findTarget(commandName, args), args);
+		final BufferedReader in = new BufferedReader(execute.getReader());
+		try {
+			String l;
+			while ((l = in.readLine()) !=null){
+				System.out.println(l);
+			}
+		} finally {
+			in.close();
+		}
+		if (execute.getPath() == null) {
+			System.exit(0);
+		}
+		pwd = execute.getPath();
 	}
 
 	void verifyContext() {
@@ -83,7 +103,7 @@ public class WebSh implements Lifecycle {
 		}
 	}
 
-	Target findTarget(URI pwd, String commandName, String... args) {
+	Target findTarget(String commandName, String... args) {
 
 		for (Object bean : context.getBeansWithAnnotation(Path.class).values()) {
 			String root = bean.getClass().getAnnotation(Path.class).value();
@@ -110,19 +130,18 @@ public class WebSh implements Lifecycle {
 		throw new IllegalStateException("no candidates found for " + pwd + " " + commandName + " " + Arrays.toString(args));
 	}
 
-	ModelAndView execute(URI pwd, String commandName, String... args) throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-		return execute(findTarget(pwd,commandName,args), pwd,args);
-	}
-
-	ModelAndView execute(Target target, URI path, String... args) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+	ModelAndView execute(Target target, String... args) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
 		final List<Object> params = new ArrayList<Object>();
 		int i = 0;
 		for (Class<?> c : target.getMethod().getParameterTypes()) {
 			if (c.equals(URI.class)) {
 				assert i ==0;
-				params.add(path);
+				params.add(pwd);
 			} else {
-				params.add(c.getConstructor(String.class).newInstance(args[i]));
+				final Class<?> c1 =
+					c.equals(int.class) ? Integer.class :
+							c;
+				params.add(c1.getConstructor(String.class).newInstance(args[i]));
 				i++;
 			}
 		}

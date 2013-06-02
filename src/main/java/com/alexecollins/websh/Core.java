@@ -21,9 +21,14 @@ public class Core {
 	@Autowired WebSh sh;
 
 	@Path("")
-	@Help("connect to a new web site, e.g. connect e.g. http://www.google.com\"")
-	public ModelAndView connect(URI path, String newPath) throws URISyntaxException {
+	@Help("open to a new web site, e.g. open http://www.google.com")
+	public ModelAndView open(URI path, String newPath) throws URISyntaxException {
 		return ModelAndView.of(new URI(newPath), new StringReader("connected to " + newPath));
+	}
+
+	@Path("")
+	public ModelAndView whereami(URI path) {
+		return ModelAndView.of(path, new StringReader(path.toString()));
 	}
 
 	@Path("")

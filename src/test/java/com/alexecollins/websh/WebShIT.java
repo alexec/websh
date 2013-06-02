@@ -15,7 +15,7 @@ import static org.junit.Assert.assertEquals;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = "classpath:/com/alexecollins/websh/applicationContext.xml")
-public class WebShTest {
+public class WebShIT {
 
 	@Autowired
 	WebSh sut;
@@ -27,14 +27,14 @@ public class WebShTest {
 
 	@Test
 	public void testFindTarget() throws Exception {
-		final Target next = sut.findTarget(URI.create(""), "connect", new String[]{"http://www.google.com"});
-		assertEquals("connect", next.getMethod().getName());
+		final Target next = sut.findTarget("open", "http://www.google.com");
+		assertEquals("open", next.getMethod().getName());
 	}
 
 	@Test
 	public void testExecute() throws Exception {
 		final String[] args = {"http://www.google.com"};
-		final ModelAndView connect = sut.execute(sut.findTarget(URI.create(""), "connect", args), URI.create(""), args);
+		final ModelAndView connect = sut.execute(sut.findTarget("open", args), args);
 		assertEquals(URI.create(args[0]), connect.getPath());
 	}
 }

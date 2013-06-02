@@ -1,33 +1,34 @@
 package com.alexecollins.websh;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.net.URI;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 /**
  * @author alexec (alex.e.c@gmail.com)
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = "classpath:/com/alexecollins/websh/applicationContext.xml")
-public class CoreTest {
+public class GoogleIT {
 	@Autowired
 	WebSh sut;
 
-	@Test
-	public void testHelpSimple() throws Exception {
-		final ModelAndView help = sut.execute(URI.create(""), "help");
-		assertEquals("connect\nhelp\nquit", TestUtils.readerToString(help.getReader()));
+	@Before
+	public void setUp() throws Exception {
+		sut.execute("open", "http://www.google.com");
 	}
 
 	@Test
-	public void testHelpComplex() throws Exception {
-	fail();
+	public void testSearch() throws Exception {
+		sut.execute( "search", "\"funny cat videos\"");
+	}
+
+	@Test
+	public void testGo() throws Exception {
+		sut.execute( "search", "\"funny cat videos\"");
+		sut.execute("go", "1");
 	}
 }
