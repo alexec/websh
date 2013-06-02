@@ -10,9 +10,11 @@ import java.net.URI;
  */
 @Component
 @Path("https://www.facebook.com")
+@Help("accessing facebook")
 public class Facebook {
 
 	@Path("")
+	@Help("show the news")
 	public ModelAndView news(URI path) {
 		return ModelAndView.of(path, new StringReader(""));
 	}

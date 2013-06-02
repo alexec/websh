@@ -7,5 +7,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Path("https://www.google.com")
+@Help("accessing Google search")
 public class Google {
 }
