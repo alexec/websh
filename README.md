@@ -4,7 +4,7 @@ Hate flash and HTML5? Want to get back to the days of Gopher and text based brow
 
     % ./websh
     type help or quit
- % help
+    % help
 
     Core (.*) - core commands
     ---
